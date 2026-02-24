@@ -28,7 +28,7 @@
 
         function init() {
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerWidth, 0.1, 1000);
             renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('viewport') });
             renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -99,8 +99,8 @@
             renderer.render(scene, camera);
         }
 
-        // Call init after page loads
-        document.addEventListener('DOMContentLoaded', init);
+        // Call init when page loads - scripts are loaded by this point
+        init();
     </script>
 </body>
 </html>

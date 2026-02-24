@@ -1,5 +1,3 @@
-<script src="https://threejs.org/build/three.js"></script>
-<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,14 +18,13 @@
     </div>
     <canvas id="viewport"></canvas>
     <script src="https://threejs.org/build/three.js"></script>
+    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
     <script src="https://threejs.org/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://threejs.org/examples/js/loaders/STLLoader.js"></script>
     <script>
         let scene, camera, renderer;
         let currentModel = null;
         let controls;
-
-        init();
 
         function init() {
             scene = new THREE.Scene();
@@ -101,6 +98,9 @@
             controls.update();
             renderer.render(scene, camera);
         }
+
+        // Call init after page loads
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>

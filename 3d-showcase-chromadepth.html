@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>3D model web-based showcase</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600&display=swap");
+
+      :root {
+        color-scheme: light;
+        --ink-900: #0b1420;
+        --ink-700: #1c2c3a;
+        --ink-600: #2b4256;
+        --ink-500: #41586e;
+        --sand-50: #f7f2e9;
+        --sand-100: #efe6d8;
+        --sea-500: #0c9fa0;
+        --sea-700: #0a6f73;
+        --sun-500: #f59f0b;
+        --glass: rgba(255, 255, 255, 0.82);
+        --glass-strong: rgba(255, 255, 255, 0.92);
+        --stroke: rgba(14, 23, 38, 0.12);
+        --shadow: 0 22px 50px rgba(11, 20, 32, 0.16);
+        --shadow-soft: 0 14px 30px rgba(11, 20, 32, 0.12);
+        --radius-lg: 24px;
+        --radius-md: 16px;
+        --radius-sm: 12px;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        color: var(--ink-900);
+        background:
+          radial-gradient(1200px 600px at 15% -10%, rgba(12, 159, 160, 0.2), transparent 60%),
+          radial-gradient(900px 500px at 90% 0%, rgba(245, 159, 11, 0.18), transparent 55%),
+          linear-gradient(130deg, #f7f2e9 0%, #eef2f6 58%, #eef2eb 100%);
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(14, 23, 38, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(14, 23, 38, 0.05) 1px, transparent 1px);
+        background-size: 140px 140px;
+        opacity: 0.35;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      a { color: inherit; text-decoration: none; }
+
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px 20px 60px;
+      }
+
+      .hero {
+        display: grid;
+        gap: 18px;
+        padding: 32px;
+        background: var(--glass-strong);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--stroke);
+        animation: fade-up 0.8s ease both;
+      }
+
+      .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(12, 159, 160, 0.3);
+        color: var(--sea-700);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        background: rgba(12, 159, 160, 0.1);
+        width: fit-content;
+      }
+
+      .hero-credit { font-size: 0.9rem; color: var(--ink-500); }
+      .hero h1 { font-family: "Fraunces", "Iowan Old Style", serif; font-size: clamp(2.2rem, 3vw, 3.3rem); margin: 0; letter-spacing: -0.01em; color: var(--ink-900); }
+      .hero p { margin: 0; color: var(--ink-700); font-size: 1.05rem; max-width: 70ch; }
+
+      .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+      .primary-button { padding: 12px 20px; border-radius: 999px; background: var(--ink-900); color: #fff; font-weight: 600; border: none; cursor: pointer; box-shadow: var(--shadow-soft); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+      .primary-button:hover { transform: translateY(-1px); box-shadow: 0 18px 28px rgba(11, 20, 32, 0.22); }
+      .hero-hint { font-size: 0.92rem; color: var(--ink-500); }
+
+      .viewer-section { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: 26px; margin-top: 28px; animation: fade-up 0.9s ease both; animation-delay: 0.1s; }
+      .panel { background: var(--glass); border-radius: var(--radius-lg); padding: 22px; border: 1px solid var(--stroke); box-shadow: var(--shadow-soft); }
+      .panel h2 { margin: 0 0 8px; font-size: 1.1rem; letter-spacing: 0.01em; text-transform: uppercase; color: var(--ink-500); }
+      .panel p { margin: 0 0 18px; color: var(--ink-700); }
+
+      .model-list { display: grid; gap: 12px; margin-top: 16px; }
+      .model-button { display: grid; gap: 6px; padding: 14px; border-radius: var(--radius-md); border: 1px solid transparent; background: rgba(255, 255, 255, 0.7); font: inherit; text-align: left; cursor: pointer; transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease; }
+      .model-button strong { font-size: 1rem; color: var(--ink-900); }
+      .model-button span { font-size: 0.85rem; color: var(--ink-500); }
+      .model-button[data-active="true"] { border-color: rgba(12, 159, 160, 0.6); background: rgba(12, 159, 160, 0.08); transform: translateY(-1px); }
+
+      .viewer-card { display: grid; gap: 18px; }
+      .viewer-header { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; }
+      .viewer-title h2 { margin: 0; font-family: "Fraunces", "Iowan Old Style", serif; font-size: 1.7rem; }
+      .viewer-title p { margin: 4px 0 0; color: var(--ink-500); }
+
+      .viewer-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+      .control-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.85); border: 1px solid var(--stroke); font-size: 0.85rem; }
+      .control-chip input[type="checkbox"], .control-chip input[type="range"] { accent-color: var(--sea-700); }
+      .control-chip select { border: none; background: transparent; font: inherit; color: var(--ink-700); padding: 2px 4px; }
+
+      .control-button { border: none; border-radius: 999px; padding: 8px 14px; background: var(--ink-900); color: #fff; font-weight: 600; cursor: pointer; }
+      .control-button:disabled { opacity: 0.6; cursor: not-allowed; }
+      .control-button.zoom-button { background: var(--sea-700); padding: 8px 12px; font-size: 0.85rem; }
+      .control-button.zoom-button:hover { background: var(--sea-500); }
+
+      .viewer-stage { position: relative; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--stroke); background: radial-gradient(circle at 30% 20%, rgba(12, 159, 160, 0.15), transparent 55%), radial-gradient(circle at 70% 70%, rgba(245, 159, 11, 0.16), transparent 50%), linear-gradient(140deg, #ffffff, #edf2f5 75%); height: 460px; }
+      #modelCanvas { width: 100%; height: 100%; display: block; }
+
+      .viewer-overlay { position: absolute; inset: 16px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
+      .overlay-pill { padding: 8px 12px; border-radius: 999px; background: rgba(11, 20, 32, 0.75); color: #fff; font-size: 0.8rem; letter-spacing: 0.02em; }
+      .overlay-pill.light { background: rgba(255, 255, 255, 0.9); color: var(--ink-700); border: 1px solid var(--stroke); }
+
+      .model-details { display: grid; gap: 16px; }
+      .detail-block { padding: 16px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.9); border: 1px solid var(--stroke); }
+      .detail-block h3 { margin: 0 0 8px; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-500); }
+      .detail-block p { margin: 0; color: var(--ink-700); }
+
+      .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+      .detail-item { padding: 14px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.7); border: 1px solid var(--stroke); }
+      .detail-item span { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-500); }
+      .detail-item strong { display: block; margin-top: 6px; font-weight: 600; color: var(--ink-900); }
+      .tag-row { display: flex; flex-wrap: wrap; gap: 8px; }
+      .tag { padding: 6px 10px; border-radius: 999px; font-size: 0.75rem; color: var(--ink-700); background: rgba(12, 159, 160, 0.12); border: 1px solid rgba(12, 159, 160, 0.2); }
+
+      @keyframes fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+      @media (max-width: 900px) { .viewer-section { grid-template-columns: 1fr; } .viewer-stage { height: 380px; } }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div class="hero-badge">Experience 3D data natively</div>
+        <h1>Bridging Data Complexity and Scientific Insight</h1>
+        <div class="hero-credit">by Jaime Aguilar for AGU 2025</div>
+        <p>Explore the Assets library. Each model is optimized for real-time viewing and scientific analysis.</p>
+        <div class="hero-actions">
+          <button class="primary-button" type="button" id="jumpToViewer">Explore the models</button>
+          <span class="hero-hint">Drag to rotate, scroll to zoom.</span>
+        </div>
+      </header>
+
+      <section class="viewer-section" id="viewerSection">
+        <aside class="panel">
+          <h2>Model library</h2>
+          <div class="model-list" id="modelList"></div>
+        </aside>
+
+        <div class="panel viewer-card">
+          <div class="viewer-header">
+            <div class="viewer-title">
+              <h2 id="modelTitle">Loading model...</h2>
+              <p id="modelSubtitle">Preparing the 3D scene.</p>
+            </div>
+            <div class="viewer-controls">
+              <label class="control-chip">
+                Colormap
+                <select id="colormapSelect">
+                  <option value="original">Original</option>
+                  <option value="chromadepth">ChromaDepth</option>
+                  <option value="viridis">Viridis</option>
+                  <option value="turbo">Turbo</option>
+                  <option value="solid">White</option>
+                </select>
+              </label>
+              <label class="control-chip">
+                <input type="checkbox" id="autoRotate" checked /> Auto-rotate
+              </label>
+              <label class="control-chip">
+                <input type="checkbox" id="wireframeToggle" /> Wireframe
+              </label>
+              <button class="control-button" type="button" id="resetView">Reset view</button>
+            </div>
+          </div>
+
+          <div class="viewer-stage">
+            <canvas id="modelCanvas"></canvas>
+            <div class="viewer-overlay">
+              <span class="overlay-pill" id="loadStatus">Ready</span>
+            </div>
+          </div>
+
+          <div class="model-details">
+            <div class="detail-block">
+              <h3>Description</h3>
+              <p id="modelDescription">Select a model to view details.</p>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item"><span>Use case</span><strong id="modelUseCase">--</strong></div>
+              <div class="detail-item"><span>Tags</span><div class="tag-row" id="modelTags"></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+      import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+
+      // --- CONFIG & MODELS ---
+      const modelData = [
+        { id: "interior", name: "Earth Interior", subtitle: "Core Layering", file: "https://threejs.org/examples/models/gltf/DamagedHelmet/glTF/DamagedHelmet.gltf", useCase: "Education", tags: ["Geology"] },
+        { id: "antarctica", name: "Antarctica", subtitle: "Topography", file: "https://threejs.org/examples/models/gltf/LeePerrySmith/LeePerrySmith.glb", useCase: "Research", tags: ["Cryosphere"] }
+      ];
+
+      let scene, camera, renderer, controls, currentModel;
+      const canvas = document.getElementById("modelCanvas");
+      const colormapSelect = document.getElementById("colormapSelect");
+      const loader = new GLTFLoader();
+
+      // --- CHROMADEPTH SHADER ---
+      const chromaDepthShader = {
+        uniforms: {
+          uNear: { value: 0 },
+          uFar: { value: 10 }
+        },
+        vertexShader: `
+          varying float vDepth;
+          void main() {
+            vec4 viewPos = modelViewMatrix * vec4(position, 1.0);
+            vDepth = -viewPos.z;
+            gl_Position = projectionMatrix * viewPos;
+          }
+        `,
+        fragmentShader: `
+          uniform float uNear;
+          uniform float uFar;
+          varying float vDepth;
+          vec3 hue2rgb(float h) {
+            float r = abs(h * 6.0 - 3.0) - 1.0;
+            float g = 2.0 - abs(h * 6.0 - 2.0);
+            float b = 2.0 - abs(h * 6.0 - 4.0);
+            return clamp(vec3(r, g, b), 0.0, 1.0);
+          }
+          void main() {
+            float d = clamp((vDepth - uNear) / (uFar - uNear), 0.0, 1.0);
+            // Red (near) to Blue (far)
+            vec3 color = hue2rgb(d * 0.66);
+            gl_FragColor = vec4(color, 1.0);
+          }
+        `
+      };
+
+      const chromaMaterial = new THREE.ShaderMaterial(chromaDepthShader);
+
+      function init() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+        camera.position.set(0, 0, 5);
+
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.autoRotate = true;
+
+        const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambient);
+
+        const sun = new THREE.DirectionalLight(0xffffff, 1);
+        sun.position.set(5, 5, 5);
+        scene.add(sun);
+
+        render();
+        buildModelList();
+        loadModel(modelData[0]);
+
+        window.addEventListener('resize', onResize);
+      }
+
+      function buildModelList() {
+        const list = document.getElementById("modelList");
+        modelData.forEach(m => {
+          const btn = document.createElement("button");
+          btn.className = "model-button";
+          btn.innerHTML = `<strong>${m.name}</strong><span>${m.subtitle}</span>`;
+          btn.onclick = () => loadModel(m);
+          list.appendChild(btn);
+        });
+      }
+
+      function loadModel(data) {
+        if (currentModel) scene.remove(currentModel);
+        document.getElementById("loadStatus").innerText = "Loading...";
+        
+        loader.load(data.file, (gltf) => {
+          currentModel = gltf.scene;
+          
+          // Center and scale
+          const box = new THREE.Box3().setFromObject(currentModel);
+          const size = box.getSize(new THREE.Vector3());
+          const center = box.getCenter(new THREE.Vector3());
+          currentModel.position.sub(center);
+          
+          scene.add(currentModel);
+          updateUI(data);
+          applyColormap(); // Initial check
+          
+          document.getElementById("loadStatus").innerText = "Ready";
+        });
+      }
+
+      function applyColormap() {
+        if (!currentModel) return;
+        const mode = colormapSelect.value;
+        const stage = document.querySelector('.viewer-stage'); // Get the container
+      
+        if (mode === "chromadepth") {
+          // 1. Set Three.js background to black
+          scene.background = new THREE.Color(0x000000);
+          // 2. Add the CSS class for the container
+          stage.classList.add('dark-bg');
+        } else {
+          // 1. Revert Three.js background (null makes it transparent again)
+          scene.background = null;
+          // 2. Remove the CSS class to show the original gradient
+          stage.classList.remove('dark-bg');
+        }
+      
+        currentModel.traverse(node => {
+          if (node.isMesh) {
+            if (mode === "chromadepth") {
+              const box = new THREE.Box3().setFromObject(currentModel);
+              const dist = camera.position.distanceTo(new THREE.Vector3(0,0,0));
+              const size = box.getSize(new THREE.Vector3()).length();
+              
+              chromaMaterial.uniforms.uNear.value = dist - size/2;
+              chromaMaterial.uniforms.uFar.value = dist + size/2;
+              node.material = chromaMaterial;
+            } else if (mode === "solid") {
+              node.material = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            } else {
+              node.material = new THREE.MeshStandardMaterial({ color: 0x0c9fa0 });
+            }
+          }
+        });
+      }
+
+      function updateUI(data) {
+        document.getElementById("modelTitle").innerText = data.name;
+        document.getElementById("modelSubtitle").innerText = data.subtitle;
+        document.getElementById("modelDescription").innerText = data.useCase;
+      }
+
+      function onResize() {
+        camera.aspect = canvas.clientWidth / canvas.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+      }
+
+      function render() {
+        requestAnimationFrame(render);
+        controls.autoRotate = document.getElementById("autoRotate").checked;
+        controls.update();
+        
+        // Dynamic depth update if in chromadepth mode
+        if (colormapSelect.value === "chromadepth") applyColormap();
+        
+        renderer.render(scene, camera);
+      }
+
+      colormapSelect.onchange = applyColormap;
+      document.getElementById("resetView").onclick = () => { camera.position.set(0,0,5); controls.target.set(0,0,0); };
+
+      init();
+    </script>
+  </body>
+</html>

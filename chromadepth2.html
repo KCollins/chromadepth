@@ -174,7 +174,7 @@
 
           vec3 spectralColor(float t) {
             // Standard ChromaDepth Ramp: Red(0) to Blue(0.66)
-            float h = (1.0 - t) * 0.66; 
+            float h = t * 0.66; 
             vec3 c = vec3(0.0);
             
             // Precise Spectral approximation

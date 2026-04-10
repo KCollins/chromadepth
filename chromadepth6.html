@@ -101,10 +101,10 @@
 
       .controls {
         display: flex;
+        flex-wrap: wrap;
         gap: 12px;
         margin-bottom: 15px;
         align-items: center;
-        flex-wrap: wrap;
       }
 
       .chip {
@@ -115,7 +115,7 @@
         border: 1px solid var(--stroke);
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
       }
 
       .lib-item {
@@ -168,7 +168,7 @@
               </select>
             </div>
             <label class="chip"><input type="checkbox" id="autoRotate" checked> Auto-Rotate</label>
-            <label class="chip"><input type="checkbox" id="bgToggle" checked> Texture Background</label>
+            <label class="chip"><input type="checkbox" id="imageBgToggle"> Use Image BG</label>
             <button id="resetCam" style="border:none; background:none; cursor:pointer; text-decoration:underline; font-size:0.8rem;">Reset Camera</button>
           </div>
 
@@ -247,8 +247,10 @@
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x000000);
 
-        // Pre-load your background image
-        bgTexture = texLoader.load('background.jpg');
+        // Pre-load background texture
+        bgTexture = texLoader.load('background.jpg', undefined, undefined, (err) => {
+          console.warn("Could not find background.jpg. Ensure it is in the same folder.");
+        });
 
         camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 2000);
         camera.position.set(0, 0, 5);
@@ -267,7 +269,7 @@
           if(file) loadModel(URL.createObjectURL(file));
         };
         document.getElementById("modeSelect").onchange = applyMode;
-        document.getElementById("bgToggle").onchange = applyMode; // Listen for bg change
+        document.getElementById("imageBgToggle").onchange = applyMode; // Listen for BG toggle
         document.getElementById("resetCam").onclick = () => controls.reset();
         document.querySelectorAll(".lib-item").forEach(btn => {
           btn.onclick = () => loadModel(btn.dataset.url);
@@ -306,20 +308,19 @@
       function applyMode() {
         if(!currentModel) return;
         const isChroma = document.getElementById("modeSelect").value === "chroma";
-        const useTexture = document.getElementById("bgToggle").checked;
+        const useImageBg = document.getElementById("imageBgToggle").checked;
 
         currentModel.traverse(n => {
           if(n.isMesh) n.material = isChroma ? chromaMat : n.userData.origMat;
         });
 
-        // Background switching logic
-        if (isChroma) {
-            scene.background = useTexture ? bgTexture : new THREE.Color(0x000000);
+        // Set Background logic
+        if (useImageBg && bgTexture) {
+          scene.background = bgTexture;
         } else {
-            scene.background = new THREE.Color(0xeef2f6);
+          scene.background = new THREE.Color(isChroma ? 0x000000 : 0xeef2f6);
         }
         
-        // Add lights if original materials are showing
         if(!isChroma && !scene.getObjectByName("mainLight")) {
           const light = new THREE.DirectionalLight(0xffffff, 2);
           light.name = "mainLight";

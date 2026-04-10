@@ -168,7 +168,7 @@
               </select>
             </div>
             <label class="chip"><input type="checkbox" id="autoRotate" checked> Auto-Rotate</label>
-            <label class="chip"><input type="checkbox" id="showSpecks" checked> Purple Specks</label>
+            <label class="chip"><input type="checkbox" id="showVariegated" checked> Variegated BG</label>
             <button id="resetCam" style="border:none; background:none; cursor:pointer; text-decoration:underline; font-size:0.8rem;">Reset Camera</button>
           </div>
 
@@ -208,7 +208,55 @@
 
       const paletteTex = buildPalette(chromaHex);
 
-      // --- 2. THE SHADER ---
+      // --- 2. VARIEGATED TEXTURE GENERATOR ---
+      function generateVariegatedTexture() {
+        const size = 512;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        // Fill background black
+        ctx.fillStyle = '#050308';
+        ctx.fillRect(0, 0, size, size);
+
+        // Add variegated "purple patches"
+        for (let i = 0; i < 40; i++) {
+          const x = Math.random() * size;
+          const y = Math.random() * size;
+          const radius = Math.random() * size * 0.5;
+          const grd = ctx.createRadialGradient(x, y, 0, x, y, radius);
+          
+          // Random purples
+          const hue = 260 + Math.random() * 40; // Purple range
+          const opacity = 0.05 + Math.random() * 0.1;
+          grd.addColorStop(0, `hsla(${hue}, 70%, 40%, ${opacity})`);
+          grd.addColorStop(1, `transparent`);
+          
+          ctx.fillStyle = grd;
+          ctx.fillRect(0, 0, size, size);
+        }
+
+        // Add fine "grit" noise
+        const imgData = ctx.getImageData(0, 0, size, size);
+        const data = imgData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          const noise = (Math.random() - 0.5) * 10;
+          data[i] += noise;     // R
+          data[i + 1] += noise; // G
+          data[i + 2] += noise; // B
+        }
+        ctx.putImageData(imgData, 0, 0);
+
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        return tex;
+      }
+
+      const variegatedTexture = generateVariegatedTexture();
+
+      // --- 3. THE SHADER ---
       const chromaShader = {
         uniforms: {
           uNear: { value: 0 },
@@ -237,8 +285,8 @@
 
       const chromaMat = new THREE.ShaderMaterial(chromaShader);
 
-      // --- 3. SCENE LOGIC ---
-      let scene, camera, renderer, controls, currentModel, speckles;
+      // --- 4. SCENE LOGIC ---
+      let scene, camera, renderer, controls, currentModel;
       const canvas = document.getElementById("mainCanvas");
       const loader = new GLTFLoader();
 
@@ -256,10 +304,6 @@
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
-        // Add Purple Specks (Starfield)
-        speckles = createSpeckleSystem();
-        scene.add(speckles);
-
         // Listeners
         window.addEventListener('resize', onResize);
         document.getElementById("fileInput").onchange = (e) => {
@@ -267,7 +311,7 @@
           if(file) loadModel(URL.createObjectURL(file));
         };
         document.getElementById("modeSelect").onchange = applyMode;
-        document.getElementById("showSpecks").onchange = applyMode;
+        document.getElementById("showVariegated").onchange = applyMode;
         document.getElementById("resetCam").onclick = () => controls.reset();
         document.querySelectorAll(".lib-item").forEach(btn => {
           btn.onclick = () => loadModel(btn.dataset.url);
@@ -275,29 +319,6 @@
 
         animate();
         loadModel(document.querySelector(".lib-item").dataset.url);
-      }
-
-      function createSpeckleSystem() {
-        const geometry = new THREE.BufferGeometry();
-        const vertices = [];
-        // Create 5000 random purple specks in a large sphere
-        for (let i = 0; i < 5000; i++) {
-          const x = THREE.MathUtils.randFloatSpread(2000);
-          const y = THREE.MathUtils.randFloatSpread(2000);
-          const z = THREE.MathUtils.randFloatSpread(2000);
-          vertices.push(x, y, z);
-        }
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        
-        const material = new THREE.PointsMaterial({ 
-            color: 0x8a2be2, // Blue-Violet / Purple
-            size: 1.5,
-            transparent: true,
-            opacity: 0.6,
-            sizeAttenuation: true
-        });
-        
-        return new THREE.Points(geometry, material);
       }
 
       function loadModel(url) {
@@ -329,59 +350,11 @@
       function applyMode() {
         if(!currentModel) return;
         const isChroma = document.getElementById("modeSelect").value === "chroma";
-        const useSpecks = document.getElementById("showSpecks").checked;
+        const useVariegated = document.getElementById("showVariegated").checked;
 
         currentModel.traverse(n => {
           if(n.isMesh) n.material = isChroma ? chromaMat : n.userData.origMat;
         });
 
-        // Toggle background color and speck visibility
         if (isChroma) {
-          scene.background = new THREE.Color(0x000000);
-          speckles.visible = useSpecks;
-        } else {
-          scene.background = new THREE.Color(0xeef2f6);
-          speckles.visible = false;
-        }
-        
-        // Handle lights
-        let mainLight = scene.getObjectByName("mainLight");
-        if(!isChroma) {
-          if(!mainLight) {
-            const light = new THREE.DirectionalLight(0xffffff, 2);
-            light.name = "mainLight";
-            light.position.set(1, 1, 2);
-            scene.add(light);
-            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-          }
-        } else if(mainLight) {
-            // Optional: remove lights in chroma mode to keep it purely distance-based
-        }
-      }
-
-      function animate() {
-        requestAnimationFrame(animate);
-        controls.autoRotate = document.getElementById("autoRotate").checked;
-        controls.update();
-
-        if(currentModel && document.getElementById("modeSelect").value === "chroma") {
-          const box = new THREE.Box3().setFromObject(currentModel);
-          const min = box.min.clone().applyMatrix4(camera.matrixWorldInverse);
-          const max = box.max.clone().applyMatrix4(camera.matrixWorldInverse);
-          chromaShader.uniforms.uNear.value = Math.min(-min.z, -max.z);
-          chromaShader.uniforms.uFar.value = Math.max(-min.z, -max.z);
-        }
-
-        renderer.render(scene, camera);
-      }
-
-      function onResize() {
-        camera.aspect = canvas.clientWidth / canvas.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-      }
-
-      init();
-    </script>
-  </body>
-</html>
+          scene.background =

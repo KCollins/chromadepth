@@ -16,13 +16,12 @@
       @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600&display=swap");
 
       :root {
-        /* Dark Theme Palette */
         --ink-950: #05080c;
         --ink-900: #0b1420;
         --ink-700: #1c2c3a;
         --ink-500: #7d9bb8;
         --sea-500: #0ed2d3;
-        --glass: rgba(11, 20, 32, 0.7);
+        --glass: rgba(11, 20, 32, 0.75);
         --stroke: rgba(255, 255, 255, 0.1);
         --radius-lg: 24px;
         --radius-md: 16px;
@@ -98,7 +97,6 @@
         border: 1px solid #333;
       }
       
-      /* Fullscreen specific behavior */
       .viewport-container:fullscreen {
         width: 100vw;
         height: 100vh;
@@ -154,8 +152,6 @@
         font-size: 0.8rem;
       }
 
-      .btn-action:hover { background: #334155; }
-
       @media (max-width: 900px) { .viewer-grid { grid-template-columns: 1fr; } }
     </style>
   </head>
@@ -163,7 +159,7 @@
     <div class="page">
       <header class="hero">
         <h1>ChromaDepth™ Visualizer</h1>
-        <p style="color: var(--ink-500)">Explore 3D data via perceptual depth-to-color mapping.</p>
+        <p style="color: var(--ink-500)">Specialized tool for AGU 2025 presentation.</p>
         <div class="upload-area">
           <div class="btn-primary">
             Upload .GLB / .GLTF
@@ -181,7 +177,6 @@
             <button class="lib-item" data-url="https://kcollins.github.io/chromadepth/acropora_valenciennesi.glb">Acropora</button>
             <button class="lib-item" data-url="https://kcollins.github.io/chromadepth/24584_Curiosity_static.glb">Curiosity Rover</button>
             <button class="lib-item" data-url="https://threejs.org/examples/models/gltf/DamagedHelmet/glTF/DamagedHelmet.gltf">Damaged Helmet</button>
-            <button class="lib-item" data-url="https://threejs.org/examples/models/gltf/LeePerrySmith/LeePerrySmith.glb">Lee Perry Smith</button>
           </div>
         </aside>
 
@@ -195,13 +190,14 @@
               </select>
             </div>
             <label class="chip"><input type="checkbox" id="autoRotate" checked> Auto-Rotate</label>
+            <label class="chip"><input type="checkbox" id="imageBgToggle"> Use Image BG</label>
             <button id="resetCam" class="btn-action">Reset Camera</button>
             <button id="fullscreenBtn" class="btn-action" style="border-color: var(--sea-500);">⛶ Fullscreen</button>
           </div>
 
           <div class="viewport-container" id="viewContainer">
             <canvas id="mainCanvas"></canvas>
-            <div style="position:absolute; bottom:15px; left:15px; color:white; font-size:0.7rem; pointer-events:none; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 4px;">
+            <div style="position:absolute; bottom:15px; left:15px; color:white; font-size:0.7rem; pointer-events:none; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 4px; backdrop-filter: blur(4px);">
               NEAR <span style="display:inline-block; width:100px; height:8px; background:linear-gradient(90deg, red, yellow, green, blue); margin: 0 5px; vertical-align:middle; border-radius:4px;"></span> FAR
             </div>
           </div>
@@ -214,7 +210,7 @@
       import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
       import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-      // --- 1. HEX PALETTE DATA ---
+      // --- Palette Data ---
       const chromaHex = "0000 0000 0080 0003 8400 0588 0008 8c00 0b90 000e 9400 1099 0013 9d00 16a1 0019 a500 1ba9 001e ad00 21b1 0024 b500 26b9 0029 bd00 2cc2 002f c600 31ca 0034 ce00 37d2 003a d600 3cda 003f de00 42e2 0045 e600 47eb 004a ef00 4df3 0050 f700 52fb 0055 ff00 59fa 005c f400 60ef 0063 ea00 67e4 006a df00 6eda 0071 d500 75cf 0078 ca00 7cc5 0080 bf00 83ba 0087 b500 8aaf 008e aa00 91a5 0095 9f00 989a 009c 9500 9f8f 00a3 8a00 a685 00aa 8000 ae7a 00b1 7500 b570 00b8 6a00 bc65 00bf 6000 c35a 00c6 5500 ca50 00cd 4a00 d145 00d5 4000 d83a 00dc 3500 df30 00e3 2b00 e625 00ea 2000 ed1b 00f1 1500 f410 00f8 0b00 fb05 00ff 0004 ff00 08ff 000c ff00 10ff 0014 ff00 18ff 001c ff00 20ff 0024 ff00 28ff 002d ff00 31ff 0035 ff00 39ff 003d ff00 41ff 0045 ff00 49ff 004d ff00 51ff 0055 ff00 59ff 005d ff00 61ff 0065 ff00 69ff 006d ff00 71ff 0075 ff00 79ff 007d ff00 82ff 0086 ff00 8aff 008e ff00 92ff 0096 ff00 9aff 009e ff00 a2ff 00a6 ff00 aaff 00ae ff00 b2ff 00b6 ff00 baff 00be ff00 c2ff 00c6 ff00 caff 00ce ff00 d2ff 00d7 ff00 dbff 00df ff00 e3ff 00e7 ff00 ebff 00ef ff00 f3ff 00f7 ff00 fbff 00ff ff00 fffd 00ff fb00 fffa 00ff f800 fff6 00ff f400 fff3 00ff f100 ffef 00ff ed00 ffec 00ff ea00 ffe8 00ff e600 ffe4 00ff e300 ffe1 00ff df00 ffdd 00ff dc00 ffda 00ff d800 ffd6 00ff d500 ffd3 00ff d100 ffcf 00ff cd00 ffcc 00ff ca00 ffc8 00ff c600 ffc5 00ff c300 ffc1 00ff bf00 ffbd 00ff bc00 ffba 00ff b800 ffb6 00ff b500 ffb3 00ff b100 ffaf 00ff ae00 ffac 00ff aa00 f9a4 07f9 a108 f99f 08f9 9c08 f999 08f9 9609 f993 09f9 9009 f88e 09f8 8b0a f888 0af8 850a f882 0af8 800b f87d 0bf8 7a0b fa79 04fa 7604 fa74 04fa 7104 fa6f 04fa 6c04 fa6a 03fa 6703 fa64 03fa 6203 fa5f 03fa 5d03 fa5a 03fa 5803 fa55 03fa 5203 fa50 03fa 4d03 fa4b 02fa 4802 fa46 02fa 4302 fa40 02fa 3e02 fa3b 02fa 3902 fa36 02fa 3302 fa31 02fa 2e02 fa2c 01fa 2901 fa27 01fa 2401 fa21 01fa 1f01 fa1c 01fa 1a01 fa17 01fa 1501 fa12 01fa 0f01 fa0d 00fa 0a00 fa08 00fa 0500 fa03 00fa 0000";
 
       function buildPalette(hex) {
@@ -235,13 +231,9 @@
 
       const paletteTex = buildPalette(chromaHex);
 
-      // --- 2. THE SHADER ---
+      // --- Shader ---
       const chromaShader = {
-        uniforms: {
-          uNear: { value: 0 },
-          uFar: { value: 10 },
-          uPalette: { value: paletteTex }
-        },
+        uniforms: { uNear: { value: 0 }, uFar: { value: 10 }, uPalette: { value: paletteTex } },
         vertexShader: `
           varying float vDist;
           void main() {
@@ -251,9 +243,7 @@
           }
         `,
         fragmentShader: `
-          uniform float uNear;
-          uniform float uFar;
-          uniform sampler2D uPalette;
+          uniform float uNear; uniform float uFar; uniform sampler2D uPalette;
           varying float vDist;
           void main() {
             float t = clamp((vDist - uNear) / (uFar - uNear), 0.0, 1.0);
@@ -264,15 +254,21 @@
 
       const chromaMat = new THREE.ShaderMaterial(chromaShader);
 
-      // --- 3. SCENE LOGIC ---
-      let scene, camera, renderer, controls, currentModel;
+      // --- Scene Logic ---
+      let scene, camera, renderer, controls, currentModel, bgTexture;
       const canvas = document.getElementById("mainCanvas");
       const container = document.getElementById("viewContainer");
       const loader = new GLTFLoader();
+      const texLoader = new THREE.TextureLoader();
 
       function init() {
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x000000);
+
+        // Pre-load background texture
+        bgTexture = texLoader.load('background.jpg', undefined, undefined, (err) => {
+          console.warn("Could not find background.jpg.");
+        });
 
         camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 2000);
         camera.position.set(0, 0, 5);
@@ -286,20 +282,12 @@
 
         // Listeners
         window.addEventListener('resize', onResize);
-        
-        // Fullscreen Logic
-        document.getElementById("fullscreenBtn").onclick = () => {
-          if (!document.fullscreenElement) {
-            container.requestFullscreen().catch(err => {
-              alert(`Error attempting to enable full-screen mode: ${err.message}`);
-            });
-          } else {
-            document.exitFullscreen();
-          }
-        };
-
-        // Update renderer when entering/exiting fullscreen
         document.addEventListener('fullscreenchange', onResize);
+
+        document.getElementById("fullscreenBtn").onclick = () => {
+          if (!document.fullscreenElement) container.requestFullscreen();
+          else document.exitFullscreen();
+        };
 
         document.getElementById("fileInput").onchange = (e) => {
           const file = e.target.files[0];
@@ -307,6 +295,7 @@
         };
         
         document.getElementById("modeSelect").onchange = applyMode;
+        document.getElementById("imageBgToggle").onchange = applyMode;
         document.getElementById("resetCam").onclick = () => controls.reset();
         document.querySelectorAll(".lib-item").forEach(btn => {
           btn.onclick = () => loadModel(btn.dataset.url);
@@ -318,26 +307,18 @@
 
       function loadModel(url) {
         if(currentModel) scene.remove(currentModel);
-        
         loader.load(url, (gltf) => {
           currentModel = gltf.scene;
-          
-          currentModel.traverse(n => {
-            if(n.isMesh) n.userData.origMat = n.material;
-          });
-
+          currentModel.traverse(n => { if(n.isMesh) n.userData.origMat = n.material; });
           const box = new THREE.Box3().setFromObject(currentModel);
           const center = box.getCenter(new THREE.Vector3());
           currentModel.position.sub(center);
-          
           scene.add(currentModel);
-          
           const size = box.getSize(new THREE.Vector3());
           const maxDim = Math.max(size.x, size.y, size.z);
           camera.position.set(0, 0, maxDim * 1.8);
           controls.target.set(0,0,0);
           controls.saveState();
-          
           applyMode();
         });
       }
@@ -345,12 +326,16 @@
       function applyMode() {
         if(!currentModel) return;
         const isChroma = document.getElementById("modeSelect").value === "chroma";
+        const useImageBg = document.getElementById("imageBgToggle").checked;
 
-        currentModel.traverse(n => {
-          if(n.isMesh) n.material = isChroma ? chromaMat : n.userData.origMat;
-        });
+        currentModel.traverse(n => { if(n.isMesh) n.material = isChroma ? chromaMat : n.userData.origMat; });
 
-        scene.background = new THREE.Color(isChroma ? 0x000000 : 0x0b1420);
+        // BG Logic
+        if (useImageBg && bgTexture) {
+          scene.background = bgTexture;
+        } else {
+          scene.background = new THREE.Color(isChroma ? 0x000000 : 0x0b1420);
+        }
         
         if(!isChroma && !scene.getObjectByName("mainLight")) {
           const light = new THREE.DirectionalLight(0xffffff, 2);
@@ -373,18 +358,13 @@
           chromaShader.uniforms.uNear.value = Math.min(-min.z, -max.z);
           chromaShader.uniforms.uFar.value = Math.max(-min.z, -max.z);
         }
-
         renderer.render(scene, camera);
       }
 
       function onResize() {
-        // Use container dimensions for flexibility (works for fullscreen too)
-        const w = container.clientWidth;
-        const h = container.clientHeight;
-        
-        camera.aspect = w / h;
+        camera.aspect = container.clientWidth / container.clientHeight;
         camera.updateProjectionMatrix();
-        renderer.setSize(w, h);
+        renderer.setSize(container.clientWidth, container.clientHeight);
       }
 
       init();
